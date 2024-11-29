@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34202.233
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WA Send API", "WA Send API.csproj", "{B39B455B-076D-4286-94E2-9D16795C675E}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "TransXtion2", "..\TransXtion2\TransXtion2\TransXtion2.vdproj", "{FF6256D2-DAEB-429F-A273-D9F4FA174D8A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B39B455B-076D-4286-94E2-9D16795C675E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B39B455B-076D-4286-94E2-9D16795C675E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B39B455B-076D-4286-94E2-9D16795C675E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B39B455B-076D-4286-94E2-9D16795C675E}.Debug|x86.Build.0 = Debug|Any CPU
+		{B39B455B-076D-4286-94E2-9D16795C675E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B39B455B-076D-4286-94E2-9D16795C675E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B39B455B-076D-4286-94E2-9D16795C675E}.Release|x86.ActiveCfg = Release|Any CPU
+		{B39B455B-076D-4286-94E2-9D16795C675E}.Release|x86.Build.0 = Release|Any CPU
+		{FF6256D2-DAEB-429F-A273-D9F4FA174D8A}.Debug|Any CPU.ActiveCfg = Debug
+		{FF6256D2-DAEB-429F-A273-D9F4FA174D8A}.Debug|x86.ActiveCfg = Debug
+		{FF6256D2-DAEB-429F-A273-D9F4FA174D8A}.Release|Any CPU.ActiveCfg = Release
+		{FF6256D2-DAEB-429F-A273-D9F4FA174D8A}.Release|x86.ActiveCfg = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3C97092A-4304-44BA-ADC0-5B81428C8DA0}
+	EndGlobalSection
+EndGlobal
