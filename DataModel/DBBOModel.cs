@@ -20,7 +20,11 @@ namespace WA_Send_API.DataModel
         public string CountDBBOClientS21 { get; set; }
         public string CountDBBOUserS21 { get; set; }
 
-
+        //OUCH
+        public string CountDBBOCCOUCH { get; set; }
+        public string CountDBBOCSOUCH { get; set; }
+        public string CountDBBOClientOUCH { get; set; }
+        public string CountDBBOUserOUCH { get; set; }
 
 
 

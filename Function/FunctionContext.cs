@@ -25,6 +25,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Collections;
+using System.Threading;
 
 namespace WA_Send_API.Function
 {
@@ -46,10 +47,22 @@ namespace WA_Send_API.Function
         protected bool _Rejected, _Approved;
         protected object _timestampLock = new object();
         protected string _setInOut, _querySetPreop, _querySetOpen, _querySetShort, _querySetOrder, _querySyncData, _querySetDBCompare, _formattedDateTime, _mobileStr;
-        protected string _ClientID, _Amount, _InOut, _FioNID, _ClientName, _ApproveTime, _RejectTime,  _ClientIDShort, _StockIDShort, _TotalShort, _TotalOrder, _CountCC, _CountClient, _CountStock;
+        protected string _ClientID, _Amount, _InOut, _FioNID, _ClientName, _ApproveTime, _RejectTime, _ClientIDShort, _StockIDShort, _TotalShort, _TotalOrder, _CountCC, _CountClient, _CountStock;
         protected string _OrderStatusPreop_Open, _OrderStatusPreop_Reject, _OrderstatusOpening_Open, _OrderstatusOpening_Reject;
-        protected string _dbBOCountCCTrus, _dbBOCountCSTrus, _dbBOCountClientTrus, _dbBOCountUserTrus, _dbBridgeCountCC, _dbBridgeCountCS, _dbBridgeCountClient, _dbBridgeCountUser;
+        protected string _dbBOCountCCTrus, _dbBOCountCSTrus, _dbBOCountClientTrus, _dbBOCountUserTrus, _dbBridgeCountCC, _dbBridgeCountCS, _dbBridgeCountClient, _dbBridgeCountUser, _dbBridgeCountUser2, _dbBridgeCountCC2;
         protected string _dbBOCountCCS21, _dbBOCountCSS21, _dbBOCountClientS21, _dbBOCountUserS21, _dbFOCountCC, _dbFOCountCS, _dbFOCountClient, _dbFOCountUser;
+
+
+        private SqlWrapper _dbCompareSqlReaderOuch, _orderStatusPreopODBCReaderOuch, _orderStatusOpenODBCReaderOuch, _clientShortODBCReaderOuch, _getOrderODBCReaderOuch;
+        //fatta 2024/12/09 //Added OUCH 
+        protected string _OrderStatusPreop_Open_OUCH, _OrderStatusPreop_Reject_OUCH, _OrderstatusOpening_Open_OUCH, _OrderstatusOpening_Reject_OUCH;
+        //fatta 2024/12/03 //Added OUCH 
+        protected string _dbBOCountCCOUCH, _dbBOCountCSOUCH, _dbBOCountClientOUCH, _dbBOCountUserOUCH, _dbBridgeCountCCOUCH, _dbBridgeCountCSOUCH, _dbBridgeCountClientOUCH, _dbBridgeCountUserOUCH;
+        //fatta 2024/12/09 //Added OUCH 
+        protected string _ClientIDShortOUCH, _StockIDShortOUCH, _TotalShortOUCH, _TotalOrderOUCH;
+
+        double statusCheckPre, statusCheckPreOUCH;
+        int statusCheck, statusCheckOUCH;
 
         public FunctionContext()
              : this(null)
@@ -121,13 +134,9 @@ namespace WA_Send_API.Function
 
                         string pattern = "[^a-zA-Z0-9 ]";
 
-                       
+
 
                         _mobileStr = Regex.Replace(o.MobilePhone, pattern, "");
-
-                        
-
-                        
 
                         QueueFundInOutData(o);
                         System.Threading.Interlocked.Increment(ref QueueCount);
@@ -159,7 +168,7 @@ namespace WA_Send_API.Function
 
                     this._fiolblQueue.addQueue(QueueCount);
                     //await _restHelper.Post("hsfvXBi91oPj2QHMuY8I", "6285174377897", "120363195609109582", _querySet.ToString());
-                    
+
                 }
 
 
@@ -176,7 +185,6 @@ namespace WA_Send_API.Function
         //DB BO Compared
         public void GetDBCompare()
         {
-           
             lock (_dbCompareSqlReader)
             {
                 try
@@ -184,14 +192,11 @@ namespace WA_Send_API.Function
                     _dbCompareSqlReader.PrepareStoredProcedure("KB_Notif_GetDBBO", 0);
                     SqlDataReader r = _dbCompareSqlReader.ExecuteReader();
 
-                    
                     if (r.HasRows)
-
                         AddLog(LogType.INFO, "Executing Select Data DB Back Office");
 
                     while (r.Read())
                     {
-                        
                         DBBOModel o = new DBBOModel();
                         o.CountDBBOCCTrus = r["CountCCTrus"].ToString();
                         o.CountDBBOCSTrus = r["CountCSTrus"].ToString();
@@ -201,7 +206,6 @@ namespace WA_Send_API.Function
                         o.CountDBBOCSS21 = r["CountCSS21"].ToString();
                         o.CountDBBOClientS21 = r["CountClientS21"].ToString();
                         o.CountDBBOUserS21 = r["CountUserS21"].ToString();
-
 
                         QueueFundInOutData(o);
                         System.Threading.Interlocked.Increment(ref QueueCount);
@@ -218,46 +222,38 @@ namespace WA_Send_API.Function
                         _dbBOCountClientS21 = o.CountDBBOClientS21;
                         _dbBOCountUserS21 = o.CountDBBOUserS21;
 
-
                         if (o != null)
                         {
                             GetDBBridge();
                             GetDBS21();
+                            GetDBBridgeOuch();
                             GetApiDbCompare();
                         }
                         else
                         {
                             MessageBox.Show("Error");
                         }
-
                     }
-                    
                 }
-
                 catch (Exception e)
                 {
                     AddLog(LogType.ERROR, e.Message, e.StackTrace);
                 }
-
             }
-
         }
 
 
         public void GetDBBridge()
         {
-
             lock (_dbCompareSqlReader)
-
             {
                 try
                 {
-                    _dbCompareSqlReader.PrepareOdbcStatementDBBridge("select (SELECT COUNT(clientid) CLIENTCASH from CLIENT_CASH where to_char(Date_,'yyyymmdd') = to_char(sysdate,'yyyymmdd')) CountClientcash, (SELECT COUNT(stockid) CLIENTSTOCK from CLIENT_STOCK where to_char(Date_,'yyyymmdd') = to_char(sysdate,'yyyymmdd')) countClientStock, (SELECT COUNT(clientid) TOTALCLIENT from Client) countclient,(SELECT COUNT(userid) TOTALUSER from USER_) countuser from dual");
+                    _dbCompareSqlReader.PrepareOdbcStatementDBBridge("select (SELECT COUNT(clientid) CLIENTCASH from CLIENT_CASH where to_char(Date_,'yyyymmdd') = to_char(sysdate,'yyyymmdd')) CountClientcash,  (SELECT COUNT(stockid) CLIENTSTOCK from CLIENT_STOCK where to_char(Date_,'yyyymmdd') = to_char(sysdate,'yyyymmdd')) countClientStock,  (SELECT COUNT(clientid) TOTALCLIENT from Client) countclient, (SELECT COUNT(userid) TOTALUSER from USER_) countuser, (SELECT * from COUNT_CLIENT ) CountUserOuch, (select count(clientid) from(select a.clientid, a.clientname from client a left join client_cash b on a.clientid = b.clientid)) CountCashUserOuch from dual");
                     OdbcDataReader r = _dbCompareSqlReader.ExecuteReaderODBCBridge();
 
 
                     if (r.HasRows)
-
                         AddLog(LogType.INFO, "Executing Select Data Dount DBBridge");
 
                     while (r.Read())
@@ -267,7 +263,8 @@ namespace WA_Send_API.Function
                         o.CountDBBridgeCS = r["CountClientStock"].ToString();
                         o.CountDBBridgeClient = r["CountClient"].ToString();
                         o.CountDBBridgeUser = r["CountUser"].ToString();
-                        //MessageBox.Show(o.Orderstatus);
+                        o.CountDBBridgeUser2 = r["CountUserOuch"].ToString();
+                        o.CountDBBridgeCC2 = r["CountCashUserOuch"].ToString();
 
                         QueueFundInOutData(o);
                         System.Threading.Interlocked.Increment(ref QueueCount);
@@ -278,7 +275,8 @@ namespace WA_Send_API.Function
                         _dbBridgeCountCS = o.CountDBBridgeCS.ToString();
                         _dbBridgeCountClient = o.CountDBBridgeClient.ToString();
                         _dbBridgeCountUser = o.CountDBBridgeUser.ToString();
-
+                        _dbBridgeCountUser2 = o.CountDBBridgeUser2.ToString();
+                        _dbBridgeCountCC2 = o.CountDBBridgeCC2.ToString();
                     }
                 }
                 catch (Exception e)
@@ -291,9 +289,7 @@ namespace WA_Send_API.Function
 
         public void GetDBS21()
         {
-
             lock (_dbCompareSqlReader)
-
             {
                 try
                 {
@@ -301,7 +297,6 @@ namespace WA_Send_API.Function
                     OdbcDataReader r = _dbCompareSqlReader.ExecuteReaderODBCDBFO();
 
                     if (r.HasRows)
-
                         AddLog(LogType.INFO, "Executing Select Sync Data ");
 
                     while (r.Read())
@@ -323,16 +318,12 @@ namespace WA_Send_API.Function
                         _dbFOCountCS = o.CountDBFOCS;
                         _dbFOCountClient = o.CountDBFOClient;
                         _dbFOCountUser = o.CountDBFOUser;
-
-
                     }
-
                 }
                 catch (Exception e)
                 {
                     AddLog(LogType.ERROR, e.Message, e.StackTrace);
                 }
-
             }
         }
 
@@ -340,18 +331,14 @@ namespace WA_Send_API.Function
         //All TIBERO Request
         public void GetOrderStatusPreop()
         {
-
             lock (_orderStatusPreopODBCReader)
-            
-                {
+            { 
                 try
                 {
-                        _orderStatusPreopODBCReader.PrepareOdbcStatementTibero("select (SELECT COUNT(orderstatus) FROM TEXCHANGEMARKETORDER where orderstatus = 0 and to_char(stime, 'hh24:MI:ss') >= '08:45:00') Orderstatus_Preop_Open,  (SELECT COUNT(orderstatus)   FROM TEXCHANGEMARKETORDER where orderstatus = 8 and to_char(stime, 'hh24:MI:ss') >= '08:45:00') Orderstatus_Preop_Reject from dual");
-                        OdbcDataReader r = _orderStatusPreopODBCReader.ExecuteReaderODBC();
-                        
+                    _orderStatusPreopODBCReader.PrepareOdbcStatementTibero("select (SELECT COUNT(orderstatus) FROM TEXCHANGEMARKETORDER where orderstatus = 0 and to_char(stime, 'hh24:MI:ss') >= '08:45:00') Orderstatus_Preop_Open,  (SELECT COUNT(orderstatus)   FROM TEXCHANGEMARKETORDER where orderstatus = 8 and to_char(stime, 'hh24:MI:ss') >= '08:45:00') Orderstatus_Preop_Reject from dual");
+                    OdbcDataReader r = _orderStatusPreopODBCReader.ExecuteReaderODBC();
 
                     if (r.HasRows)
-
                         AddLog(LogType.INFO, "Executing Select Data OrderStatusOpen");
 
                     while (r.Read())
@@ -363,23 +350,20 @@ namespace WA_Send_API.Function
 
                         QueueFundInOutData(o);
                         System.Threading.Interlocked.Increment(ref QueueCount);
-                      
+
                         AddLog(LogType.INFO, "--> Send To WA Open Status Count: " + o.Orderstatus_Preop_Open + " Rows Open | " + o.Orderstatus_Preop_Reject + " Rows Rejected");
-                           
+
                         _OrderStatusPreop_Open = o.Orderstatus_Preop_Open.ToString();
                         _OrderStatusPreop_Reject = o.Orderstatus_Preop_Reject.ToString();
 
                         if (o != null)
                         {
-                            
-
-                            GetApiPreop();
+                            statusCheckPre = double.Parse(_OrderStatusPreop_Open);
                         }
                         else
                         {
                             MessageBox.Show("Error");
                         }
-
                     }
                 }
                 catch (Exception e)
@@ -388,24 +372,19 @@ namespace WA_Send_API.Function
                 }
 
             }
+            
         }
 
-        
         public void GetOrderStatusOpen()
         {
-
-            lock (_orderStatusOpenODBCReader)
-
-            {
+            lock(_orderStatusOpenODBCReader)
+            { 
                 try
                 {
                     _orderStatusOpenODBCReader.PrepareOdbcStatementTibero("select (SELECT COUNT(orderstatus)  FROM TEXCHANGEMARKETORDER where orderstatus is null and to_char(stime, 'hh24:MI:ss') >= '09:00:00')  Orderstatus_Opening_Open,  (SELECT COUNT(orderstatus)  FROM TEXCHANGEMARKETORDER where orderstatus = 8 and to_char(stime, 'hh24:MI:ss') >= '09:00:00')  Orderstatus_Opening_Reject from dual");
                     OdbcDataReader r = _orderStatusOpenODBCReader.ExecuteReaderODBC();
-                    
-                    
 
                     if (r.HasRows)
-
                         AddLog(LogType.INFO, "Executing Select Data OrderStatusOpen");
 
                     while (r.Read())
@@ -425,30 +404,25 @@ namespace WA_Send_API.Function
 
                         if (o != null)
                         {
-
-
-                            GetApiOpen();
+                            statusCheck = int.Parse(_OrderstatusOpening_Open);
+                            //GetApiOpen();
                         }
                         else
                         {
                             MessageBox.Show("Error GetApiOpen");
                         }
-
                     }
                 }
                 catch (Exception e)
                 {
                     AddLog(LogType.ERROR, e.Message, e.StackTrace);
                 }
-
             }
         }
 
         public void GetClientShort()
         {
-
             lock (_clientShortODBCReader)
-
             {
                 try
                 {
@@ -456,7 +430,6 @@ namespace WA_Send_API.Function
                     OdbcDataReader r = _clientShortODBCReader.ExecuteReaderODBC();
 
                     if (r.HasRows)
-
                         AddLog(LogType.INFO, "Executing Select Data Short Client");
                     else
                         AddLog(LogType.INFO, "No Data Short Client");
@@ -480,39 +453,31 @@ namespace WA_Send_API.Function
 
                         if (o != null)
                         {
-
-
                             GetApiShort();
                         }
                         else
                         {
                             MessageBox.Show("Error GetApiShort");
                         }
-
                     }
-                   
                 }
                 catch (Exception e)
                 {
                     AddLog(LogType.ERROR, e.Message, e.StackTrace);
                 }
-
             }
         }
 
         public void GetOrderData()
         {
-
-            lock (_getOrderODBCReader)
-
-            {
+            lock(_getOrderODBCReader)
+            { 
                 try
                 {
                     _getOrderODBCReader.PrepareOdbcStatementTibero("Select count(orderid) Total_Order from texchangemarketorder ");
                     OdbcDataReader r = _getOrderODBCReader.ExecuteReaderODBC();
 
                     if (r.HasRows)
-
                         AddLog(LogType.INFO, "Executing Select Data Short Client");
                     else
                         AddLog(LogType.INFO, "No Data Short Client");
@@ -521,22 +486,16 @@ namespace WA_Send_API.Function
                     {
                         GetOrderModel o = new GetOrderModel();
                         o.Total_Order = r["Total_Order"].ToString();
-                      
-                        //MessageBox.Show(o.Orderstatus);
 
                         QueueFundInOutData(o);
                         System.Threading.Interlocked.Increment(ref QueueCount);
 
                         AddLog(LogType.INFO, "--> Send To WA Total Order: " + o.Total_Order);
-
                         _TotalOrder = o.Total_Order.ToString();
-                       
 
                         if (o != null)
                         {
-
-
-                            GetApiOrderCheck();
+                            //GetApiOrderCheck();
                         }
                         else
                         {
@@ -550,11 +509,221 @@ namespace WA_Send_API.Function
                 {
                     AddLog(LogType.ERROR, e.Message, e.StackTrace);
                 }
-
             }
         }
 
-        
+        //===================================================================================================================================================================//
+        //                                                                                   OUCH                                                                            //
+        //===================================================================================================================================================================//
+
+        public void GetOrderStatusPreOpOUCH() //pre op for ouch
+        {
+            lock (_orderStatusPreopODBCReader)
+            {
+                try
+                {
+                    _orderStatusPreopODBCReader.PrepareOdbcStatementDBOUCH("select (SELECT COUNT(status)  FROM tborder where status = 'O' and to_char(senttime, 'hh24:MI:ss') >= '08:45:00')  OrderStatus_Preop_Open_OUCH,  (SELECT COUNT(status)  FROM TBORDER where status = 'R' and to_char(senttime, 'hh24:MI:ss') >= '08:45:00')  OrderStatus_Preop_Reject_OUCH from dual");
+                    OdbcDataReader r = _orderStatusPreopODBCReader.ExecuteReaderODBCOUCH();
+
+                    if (r.HasRows)
+                        AddLog(LogType.INFO, "Executing select data orderstatusopen");
+
+                    while (r.Read())
+                    {
+                        OrderCheckModel o = new OrderCheckModel();
+                        o.Orderstatus_Preop_Open = r["OrderStatus_Preop_Open_OUCH"].ToString();
+                        o.Orderstatus_Preop_Reject = r["OrderStatus_Preop_Reject_OUCH"].ToString();
+
+                        QueueFundInOutData(o);
+                        System.Threading.Interlocked.Increment(ref QueueCount);
+
+                        AddLog(LogType.INFO, "--> Send To WA Pre Open Status Count: " + o.Orderstatus_Preop_Open + " Rows Open | " + o.Orderstatus_Preop_Reject + " Rows Rejected");
+
+                        _OrderStatusPreop_Open_OUCH = o.Orderstatus_Preop_Open.ToString();
+                        _OrderStatusPreop_Reject_OUCH = o.Orderstatus_Preop_Reject.ToString();
+
+                        if (o != null)
+                            statusCheckPreOUCH = double.Parse(_OrderStatusPreop_Open_OUCH);
+                        else
+                            MessageBox.Show("Error");
+                    }
+                }
+                catch (Exception e)
+                {
+                    AddLog(LogType.ERROR, e.Message, e.StackTrace);
+                }
+            }
+        }
+
+        public void GetOrderStatusOpenOUCH()
+        {
+            lock (_orderStatusOpenODBCReader)
+            {
+                try
+                {
+                    _orderStatusOpenODBCReader.PrepareOdbcStatementDBOUCH("select (SELECT COUNT(status)  FROM TBORDER where status = 'P' and to_char(senttime, 'hh24:MI:ss') >= '09:00:00')  Orderstatus_Open_Ouch,  (SELECT COUNT(status)  FROM tborder where status = 'R' and to_char(senttime, 'hh24:MI:ss') >= '09:00:00')  Orderstatus_Reject_Ouch from dual");
+                    OdbcDataReader r = _orderStatusOpenODBCReader.ExecuteReaderODBCOUCH();
+
+                    if (r.HasRows)
+                        AddLog(LogType.INFO, "Executing select data orderstatusopen");
+
+                    while (r.Read())
+                    {
+                        OrderCheckModel o = new OrderCheckModel();
+                        o.Orderstatus_Opening_Open = r["OrderStatus_Open_OUCH"].ToString();
+                        o.Orderstatus_Opening_Reject = r["OrderStatus_Reject_OUCH"].ToString();
+
+                        QueueFundInOutData(o);
+                        System.Threading.Interlocked.Increment(ref QueueCount);
+
+                        AddLog(LogType.INFO, "--> Send To WA Open Status Count: " + o.Orderstatus_Opening_Open + " Rows Open | " + o.Orderstatus_Opening_Reject + " Rows Rejected");
+
+                        _OrderstatusOpening_Open_OUCH = o.Orderstatus_Opening_Open.ToString();
+                        _OrderstatusOpening_Reject_OUCH = o.Orderstatus_Opening_Reject.ToString();
+
+                        if (o != null)
+                            statusCheckOUCH = int.Parse(_OrderstatusOpening_Open_OUCH);
+                        //GetApiOpenOuch();
+                        else
+                            MessageBox.Show("Error");
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    AddLog(LogType.ERROR, e.Message, e.StackTrace);
+                }
+            }
+        }
+
+        public void GetClientShortOUCH()
+        {
+            lock (_clientShortODBCReader)
+            {
+                try
+                {
+                    _clientShortODBCReader.PrepareOdbcStatementDBOUCH("SELECT X.accountcode as CUSTID, X.productcode as STOCKCODE, sum(X.OpenVol) OpenQty, sum(X.tradevolume) TradedQty, sum(NVL(X.WorkingSell,0)) WorkingSell, sum(X.openvol) + sum(X.tradevolume) - sum(NVL(X.WorkingSell,0)) as SHORT FROM ( SELECT accountcode, productcode, NVL(volume,0) as OpenVol, settled , 0 as WorkingSell, 0 as tradevolume FROM customersecurityposition UNION ALL SELECT A.accountcode, A.productcode, 0 as OpenVol, 0 as settled,  sum(A.WorkingSell) as WorkingSell, sum(A.tradevolume) as tradevolume FROM  ( SELECT accountcode, productcode, case when Side not in ('B','M') then NVL(remainvolume,ordervolume) else 0 end WorkingSell, case when Side in ('B','M') then 1 else -1 end * NVL(tradevolume,0) as tradevolume FROM tborder )  A  GROUP BY A.accountcode, A.productcode  ) X GROUP BY X.accountcode, X.productcode HAVING sum(X.openvol)+sum(X.tradevolume) - sum(NVL(X.WorkingSell,0))<0  ");
+                    OdbcDataReader r = _clientShortODBCReader.ExecuteReaderODBCOUCH();
+
+                    if (r.HasRows)
+                        AddLog(LogType.INFO, "Excuting Select Data Short Client");
+                    else
+                        AddLog(LogType.INFO, "No Data Short Client");
+
+                    while (r.Read())
+                    {
+                        ClientShortModel o = new ClientShortModel();
+                        o.CustID = r["CUSTID"].ToString();
+                        o.StockCode = r["STOCKCODE"].ToString();
+                        o.Short = r["SHORT"].ToString();
+
+                        QueueFundInOutData(o);
+                        System.Threading.Interlocked.Increment(ref QueueCount);
+
+                        AddLog(LogType.INFO, "--> Send To WA Client Short: ClientID = " + o.CustID + " | StockID = " + o.StockCode + " | Short = " + o.Short);
+
+                        _ClientIDShortOUCH = o.CustID.ToString();
+                        _StockIDShortOUCH = o.StockCode.ToString();
+                        _TotalShortOUCH = o.Short;
+
+                        if (o != null)
+                            GetApiShortOUCH();
+                        else
+                            MessageBox.Show("Error GetApiShort");
+                    }
+                }
+                catch (Exception e)
+                {
+                    AddLog(LogType.ERROR, e.Message, e.StackTrace);
+                }
+            }
+        }
+
+        public void GetOrderDataOuch()
+        {
+            lock (_getOrderODBCReader)
+            {
+                try
+                {
+                    _getOrderODBCReader.PrepareOdbcStatementDBOUCH("Select count(exchangeorderid) Total_Order from tborder ");
+                    OdbcDataReader r = _getOrderODBCReader.ExecuteReaderODBCOUCH();
+
+                    if (r.HasRows)
+                        AddLog(LogType.INFO, "Executing Select Data Short Client");
+                    else
+                        AddLog(LogType.INFO, "No Data Short Client");
+
+                    while (r.Read())
+                    {
+                        GetOrderModel o = new GetOrderModel();
+                        o.Total_Order = r["Total_Order"].ToString();
+
+                        QueueFundInOutData(o);
+                        System.Threading.Interlocked.Increment(ref QueueCount);
+
+                        AddLog(LogType.INFO, "--> Send To WA Total Order: " + o.Total_Order);
+
+                        _TotalOrderOUCH = o.Total_Order.ToString();
+
+                        if (o != null)
+                        {
+                            // GetApiOrderCheck(); 
+                        }
+                        else
+                            MessageBox.Show("Error GetApiOrder");
+                    }
+                }
+                catch (Exception e)
+                {
+                    AddLog(LogType.ERROR, e.Message, e.StackTrace);
+                }
+            }
+        }
+
+        public void GetDBBridgeOuch()
+        {
+            lock (_dbCompareSqlReader)
+            {
+                try
+                {
+                    _dbCompareSqlReader.PrepareOdbcStatementDBOUCH("SELECT (SELECT COUNT(*) FROM msaccount) AS CountClientCash, (SELECT COUNT(*) FROM CUSTOMERSECURITYPOSITION) AS CountClientStock, (SELECT COUNT(*) FROM msaccount) AS CountClient, (select count(1) from MSUSER where userid not in ('ARA', 'KOENTO_DEV', 'BAYU_DEV', 'HARTANTO_DEV','IVAN_TRUS', 'REINER_DEV', 'YATNA_DEV', 'RADMIN', 'HARTANTO_TRUS')) as CountUser FROM dual"); //query
+                    OdbcDataReader r = _dbCompareSqlReader.ExecuteReaderODBCOUCH();
+
+                    if (r.HasRows) 
+                        AddLog(LogType.INFO, "Executing Select Data Count DBBRidge");
+
+                    while (r.Read())
+                    {
+                        DBBridgeModel o = new DBBridgeModel();
+                        o.CountDBBridgeCC = r["CountClientCash"].ToString();
+                        o.CountDBBridgeCS = r["CountClientStock"].ToString();
+                        o.CountDBBridgeClient = r["CountClient"].ToString();
+                        o.CountDBBridgeUser = r["CountUser"].ToString();
+
+                        QueueFundInOutData(o);
+                        System.Threading.Interlocked.Increment(ref QueueCount);
+
+                        AddLog(LogType.INFO, "--> Send To WA Unofficial DBBridge OUCH: ClientCash Count: " + o.CountDBBridgeCC + " | ClientStock Count: " + o.CountDBBridgeCS + " | Client Count: " + o.CountDBBridgeClient + " | User Count: " + o.CountDBBridgeUser);
+
+                        _dbBridgeCountCCOUCH = o.CountDBBridgeCC.ToString();
+                        _dbBridgeCountCSOUCH = o.CountDBBridgeCS.ToString();
+                        _dbBridgeCountClientOUCH = o.CountDBBridgeClient.ToString();
+                        _dbBridgeCountUserOUCH = o.CountDBBridgeUser.ToString();
+                    }
+                }
+                catch (Exception e)
+                {
+                    AddLog(LogType.ERROR, e.Message, e.StackTrace);
+                }
+            }
+        }
+
+        //===================================================================================================================================================================//
+        //                                                                   End of OUCH part                                                                                //
+        //===================================================================================================================================================================//
+
+
+
 
         //API Official Function
         private void createApi()
@@ -585,7 +754,7 @@ namespace WA_Send_API.Function
                 {
                     JreceiveInfo = "rejected";
                     JsonQString = "{\"to\":\"" + _mobileStr + "\",\"type\":\"template\",\"template\":{\"namespace\":\"dc6b771d_f9c5_48e7_8b6a_93602eac6bd5\",\"name\":\"fundinout_broadcast\",\"language\":{\"policy\":\"deterministic\",\"code\":\"id\"},\"components\":[{\"type\":\"header\",\"parameters\":[{\"type\":\"text\",\"text\":\"" + JClientname + "\"}]},{\"type\":\"body\",\"parameters\":[{\"type\":\"text\",\"text\":\"" + JInOut + "\"},{\"type\":\"text\",\"text\":\"" + JreceiveInfo + "\"},{\"type\":\"text\",\"text\":\"" + _RejectTime + "\"},{\"type\":\"text\",\"text\":\"" + JFioNID + "\"},{\"type\":\"text\",\"text\":\"" + JClientID + "\"},{\"type\":\"text\",\"text\":\"" + JAmount + "\"}]}]}}";
-                   
+
                 }
 
             }
@@ -595,12 +764,12 @@ namespace WA_Send_API.Function
                 _setInOut = "Withdrawal request";
                 JInOut = _setInOut.ToString();
                 if (_Rejected == false && _Approved == true)
-                { 
+                {
                     JreceiveInfo = "approved";
                     JsonQString = "{\"to\":\"" + _mobileStr + "\",\"type\":\"template\",\"template\":{\"namespace\":\"dc6b771d_f9c5_48e7_8b6a_93602eac6bd5\",\"name\":\"fundinout_broadcast\",\"language\":{\"policy\":\"deterministic\",\"code\":\"id\"},\"components\":[{\"type\":\"header\",\"parameters\":[{\"type\":\"text\",\"text\":\"" + JClientname + "\"}]},{\"type\":\"body\",\"parameters\":[{\"type\":\"text\",\"text\":\"" + JInOut + "\"},{\"type\":\"text\",\"text\":\"" + JreceiveInfo + "\"},{\"type\":\"text\",\"text\":\"" + _ApproveTime + "\"},{\"type\":\"text\",\"text\":\"" + JFioNID + "\"},{\"type\":\"text\",\"text\":\"" + JClientID + "\"},{\"type\":\"text\",\"text\":\"" + JAmount + "\"}]}]}}";
                 }
                 else
-                { 
+                {
                     JreceiveInfo = "rejected";
                     JsonQString = "{\"to\":\"" + _mobileStr + "\",\"type\":\"template\",\"template\":{\"namespace\":\"dc6b771d_f9c5_48e7_8b6a_93602eac6bd5\",\"name\":\"fundinout_broadcast\",\"language\":{\"policy\":\"deterministic\",\"code\":\"id\"},\"components\":[{\"type\":\"header\",\"parameters\":[{\"type\":\"text\",\"text\":\"" + JClientname + "\"}]},{\"type\":\"body\",\"parameters\":[{\"type\":\"text\",\"text\":\"" + JInOut + "\"},{\"type\":\"text\",\"text\":\"" + JreceiveInfo + "\"},{\"type\":\"text\",\"text\":\"" + _RejectTime + "\"},{\"type\":\"text\",\"text\":\"" + JFioNID + "\"},{\"type\":\"text\",\"text\":\"" + JClientID + "\"},{\"type\":\"text\",\"text\":\"" + JAmount + "\"}]}]}}";
                 }
@@ -608,16 +777,9 @@ namespace WA_Send_API.Function
 
             JsonLString = JsonQString;
 
-            
+
             //_currentDateTime = DateTime.Now;
             // _formattedDateTime = _ApproveTime.ToString("dd/MM/yyyy HH:mm:ss");
-
-
-
-
-
-
-
 
 
             var client = new RestClient("https://multichannel.qiscus.com/whatsapp/v1/drrws-ujjpbqjeqvhqo2l/4785/");
@@ -625,66 +787,86 @@ namespace WA_Send_API.Function
             request.AddHeader("Qiscus-App-Id", "drrws-ujjpbqjeqvhqo2l");
             request.AddHeader("Qiscus-Secret-Key", "64f16ddbf847c48ff9731cb4e519da37");
             request.AddHeader("Content-Type", "application/json");
-           
+
             request.AddParameter("application/json", JsonLString, ParameterType.RequestBody);
 
-
-
             var response = client.Execute(request);
-
-          
 
         }
 
         //API UnOfficial Function
         public async void GetApiPreop()
         {
-            
-            
+
             _currentDateTime = DateTime.Now;
             _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
 
-                double statusCheckPre = double.Parse(_OrderStatusPreop_Open);
+            var string1 = "";
+            var string2 = "";
+
+            //double statusCheckPre = double.Parse(_OrderStatusPreop_Open);
             //MessageBox.Show(statusCheckPre.ToString());
-            string Status = string.Empty;    
+            string Status = string.Empty;
             if (statusCheckPre > 0)
             {
-                _querySetPreop = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "Preopening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject + " rows";
+                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Preopening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject + " rows";
             }
             else if (statusCheckPre <= 0)
             {
-                _querySetPreop = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "Preopening Status Order are ERROR with Total : " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject + " rows";
+                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Preopening Status Order are ERROR with Total : " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject + " rows";
             }
 
+            if (statusCheckPreOUCH > 0)
+            {
+                string2 =  System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "-------------------------------------------------------------" +  System.Environment.NewLine + "Preopening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open_OUCH + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject_OUCH + " rows";
+            }
+            else if (statusCheckPre <= 0)
+            {
+                string2 =  System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "-------------------------------------------------------------" +  System.Environment.NewLine + "Preopening Status Order are ERROR with Total : " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open_OUCH + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject_OUCH + " rows";
+            }
+
+            _querySetPreop = string1 + string2;
 
             //AddLog(LogType.INFO, _querySet.ToString());
+            //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetPreop);
             await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6281213076997", _querySetPreop);
             await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetPreop);
-            
+
             //"120363195609109582"
         }
 
 
         public async void GetApiOpen()
         {
-
-
             _currentDateTime = DateTime.Now;
             _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
 
-            int statusCheck = int.Parse(_OrderstatusOpening_Open);
-            
+            var string1 = "";
+            var string2 = "";
+
             if (statusCheck < 5)
             {
-                _querySetOpen = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "Opening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
+                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Opening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
             }
             else if (statusCheck > 10)
             {
-                _querySetOpen = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "Opening Status Order are ERROR with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
+                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Opening Status Order are ERROR with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
             }
+
+            if (statusCheckOUCH < 5)
+            {
+                string2 = System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Opening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
+            }
+            else if (statusCheckOUCH > 10)
+            {
+                string2 = System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Opening Status Order are ERROR with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
+            }
+
+            _querySetOpen = string1 + string2;
             //MessageBox.Show(Statusa);
 
             //AddLog(LogType.INFO, _querySet.ToString());
+            //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetOpen);
             await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6281213076997", _querySetOpen);
             await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetOpen);
             //"120363195609109582"
@@ -698,46 +880,62 @@ namespace WA_Send_API.Function
             _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
 
 
-            _querySetShort = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "Short ClientID = " + _ClientIDShort + System.Environment.NewLine + "StockID = " + _StockIDShort + System.Environment.NewLine + "Total Short = " + _TotalShort;
+            _querySetShort = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "Short ClientID = " + _ClientIDShort + System.Environment.NewLine + "StockID = " + _StockIDShort + System.Environment.NewLine + "Total Short = " + _TotalShort;
             //AddLog(LogType.INFO, _querySet.ToString());
 
+            //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetShort);
+            await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetShort);
+        }
+
+        public async void GetApiShortOUCH()
+        {
+            _currentDateTime = DateTime.Now;
+            _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
+
+            _querySetShort = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "Short ClientID = " + _ClientIDShortOUCH + System.Environment.NewLine + "StockID = " + _StockIDShortOUCH + System.Environment.NewLine + "Total Short = " + _TotalShortOUCH;
+
+            //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetShort);
             await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetShort);
         }
 
         public async void GetApiOrderCheck()
         {
-
-
             _currentDateTime = DateTime.Now;
             _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
 
+            var string1 = "";
+            var string2 = "";
 
-            _querySetOrder = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "Total Order = " + _TotalOrder;
+            string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "Total Order = " + _TotalOrder;
+            string2 = System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "Total Order = " + _TotalOrderOUCH;
+
             //AddLog(LogType.INFO, _querySet.ToString());
 
+            _querySetOrder = string1 + string2;
+            //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetOrder);
             await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetOrder);
-        }
 
+
+        }
 
         public async void GetApiDbCompare()
         {
-           
             _currentDateTime = DateTime.Now;
             _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
 
-                                                                                                                            
-            var string1 = _formattedDateTime.ToString() + System.Environment.NewLine  + System.Environment.NewLine + "*TRUS*" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| *Type*   |  *DBBO*    |  *DBBridge* | " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CC      |  " + _dbBOCountCCTrus + "    |  " + _dbBridgeCountCC + "      |"  + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CS      |  " + _dbBOCountCSTrus + "    |  " + _dbBridgeCountCS + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| Client |  " + _dbBOCountClientTrus + "    |  " + _dbBridgeCountClient + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| User   |  " + _dbBOCountUserTrus + "    |  " + _dbBridgeCountUser + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------";
-            var string2 = System.Environment.NewLine + System.Environment.NewLine + System.Environment.NewLine + "*S21*" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| *Type*   |  *DBBO*    |     *DBFO*     | " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CC      |  " + _dbBOCountCCS21 + "    |  " + _dbFOCountCC + "      |" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CS      |  " + _dbBOCountCSS21 + "    |  " + _dbFOCountCS + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| Client |  " + _dbBOCountClientS21 + "    |  " + _dbFOCountClient + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| User   |  " + _dbBOCountUserS21 + "    |  " + _dbFOCountUser + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------";
 
-
-            _querySetDBCompare = string1 + string2;
+            var string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*TRUS*" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| *Type*   |  *DBBO*    |  *DBBridge* | " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CC      |  " + _dbBOCountCCTrus + "    |  " + _dbBridgeCountCC + "      |" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CS      |  " + _dbBOCountCSTrus + "    |  " + _dbBridgeCountCS + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| Client |  " + _dbBOCountClientTrus + "    |  " + _dbBridgeCountClient + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| User   |  " + _dbBOCountUserTrus + "    |  " + _dbBridgeCountUser + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------";
+            var string2 = System.Environment.NewLine + System.Environment.NewLine + System.Environment.NewLine + "*S21*" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| *Type*   |  *DBBO*    |     *DBFO*     | " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CC      |  " + _dbBOCountCCS21 + "    |  " + _dbFOCountCC + "      |" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CS      |  " + _dbBOCountCSS21 + "    |  " + _dbFOCountCS + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| Client |  " + _dbBOCountClientS21 + "    |  " + _dbFOCountClient + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| User   |  " + _dbBOCountUserS21 + "    |  " + _dbFOCountUser + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------";
+            var string3 = System.Environment.NewLine + System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| *Type*   |  *DBBridge*    |  *DBFO* | " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CC      |  " + _dbBridgeCountCC2 + "    |  " + _dbBridgeCountCCOUCH + "      |" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CS      |  " + _dbBridgeCountCS + "    |  " + _dbBridgeCountCSOUCH + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| Client |  " + _dbBridgeCountClient + "    |  " + _dbBridgeCountClientOUCH + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| User   |  " + _dbBridgeCountUser2 + "    |  " + _dbBridgeCountUserOUCH + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------";
+            
+            _querySetDBCompare = string1 + string2 + string3;
             //AddLog(LogType.INFO, _querySet.ToString());
 
+            //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetDBCompare);
             await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetDBCompare);
-            //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6281297037370", _querySetDBCompare);
+            await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6281297037370", _querySetDBCompare);
         }
 
-       
         #region Process BackOffice Data
 
         protected void QueueFundInOutData(ColumnBase data)
@@ -840,7 +1038,7 @@ namespace WA_Send_API.Function
                                 case "TimeStampWrite":
                                     _CCtimeStampBuffer.CCTimestamp = long.Parse(keyvalue[1]);
                                     break;
-                                    
+
                             }
                             //AddLog(LogType.INFO, _CCtimeStampBuffer.CCTimestamp.ToString());
                         }
@@ -925,19 +1123,19 @@ namespace WA_Send_API.Function
                 try
                 {
                     switch (o.DataType)
-                        {
-                            case LogType.INFO:
-                                Log(o);
-                                break;
-                            case LogType.ERROR:
-                                LogException(o);
-                                break;
-                            default:
-                                break;
-                        }
-                   
+                    {
+                        case LogType.INFO:
+                            Log(o);
+                            break;
+                        case LogType.ERROR:
+                            LogException(o);
+                            break;
+                        default:
+                            break;
+                    }
+
                 }
-                
+
                 catch
                 {
                     //AddLog(LogType.ERROR, e.Message, e.StackTrace);
@@ -950,15 +1148,15 @@ namespace WA_Send_API.Function
             LogInfo a = o as LogInfo;
             if (this._logger == null)
                 return;
-            
-                DateTime logTime = DateTime.Now;
-            
-            
-                foreach (ILogger il in this._logger)
-                    if (il != null)
-                        il.Log(logTime, a.DataType, a.Message);
-                
-            
+
+            DateTime logTime = DateTime.Now;
+
+
+            foreach (ILogger il in this._logger)
+                if (il != null)
+                    il.Log(logTime, a.DataType, a.Message);
+
+
         }
 
         protected void LogException(LogBase o)
@@ -968,12 +1166,12 @@ namespace WA_Send_API.Function
                 return;
 
             DateTime logTime = DateTime.Now;
-            
-            
-                foreach (ILogger il in this._logger)
-                    if (il != null)
-                        il.LogException(logTime, a.DataType, a.Message, a.Stacktrace);
-            
+
+
+            foreach (ILogger il in this._logger)
+                if (il != null)
+                    il.LogException(logTime, a.DataType, a.Message, a.Stacktrace);
+
         }
 
 
@@ -1024,7 +1222,6 @@ namespace WA_Send_API.Function
 
 
     }
-
 }
 
 
