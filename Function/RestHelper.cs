@@ -14,14 +14,11 @@ namespace WA_Send_API.Function
 {
     public static class RestHelper
     {
-
-
         private static readonly string baseURL = "http://10.1.4.23/api/";
         //private static readonly string baseURL = "https://omnichannel.qiscus.com/api/v3/admin/hsm/";
 
         public static async Task<string> Post(string apikey, string from_phone, string recipient, string message )
         {
-            
             var inputData = new Dictionary<string, string>
             //var inputData = new Dictionary<string, string>
             {
@@ -45,7 +42,6 @@ namespace WA_Send_API.Function
                         }
                     }
                 }
-
             }
             return string.Empty;
         }

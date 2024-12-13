@@ -5,8 +5,6 @@ VisualStudioVersion = 17.7.34202.233
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WA Send API", "WA Send API.csproj", "{B39B455B-076D-4286-94E2-9D16795C675E}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "TransXtion2", "..\TransXtion2\TransXtion2\TransXtion2.vdproj", "{FF6256D2-DAEB-429F-A273-D9F4FA174D8A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,10 +21,6 @@ Global
 		{B39B455B-076D-4286-94E2-9D16795C675E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B39B455B-076D-4286-94E2-9D16795C675E}.Release|x86.ActiveCfg = Release|Any CPU
 		{B39B455B-076D-4286-94E2-9D16795C675E}.Release|x86.Build.0 = Release|Any CPU
-		{FF6256D2-DAEB-429F-A273-D9F4FA174D8A}.Debug|Any CPU.ActiveCfg = Debug
-		{FF6256D2-DAEB-429F-A273-D9F4FA174D8A}.Debug|x86.ActiveCfg = Debug
-		{FF6256D2-DAEB-429F-A273-D9F4FA174D8A}.Release|Any CPU.ActiveCfg = Release
-		{FF6256D2-DAEB-429F-A273-D9F4FA174D8A}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
