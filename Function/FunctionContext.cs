@@ -130,8 +130,6 @@ namespace WA_Send_API.Function
                         o.Rejected = GetBooleanValue(r["rejected"].ToString());
                         o.Approved = GetBooleanValue(r["approved"].ToString());
 
-                        //MessageBox.Show(o.Rejected);
-
                         string pattern = "[^a-zA-Z0-9 ]";
 
 
@@ -153,17 +151,11 @@ namespace WA_Send_API.Function
                         _Rejected = o.Rejected;
                         _Approved = o.Approved;
 
-                        //MessageBox.Show(_Rejected);
-
                         if (o != null)
                         {
-                            //MessageBox.Show(_ClientID);
                             //createApi();
-
                             //GetApi();
                         }
-
-
                     }
 
                     this._fiolblQueue.addQueue(QueueCount);
@@ -306,8 +298,6 @@ namespace WA_Send_API.Function
                         o.CountDBFOCS = r["CountClientStock"].ToString();
                         o.CountDBFOClient = r["CountClient"].ToString();
                         o.CountDBFOUser = r["CountUser"].ToString();
-
-                        //MessageBox.Show(o.Orderstatus);
 
                         QueueFundInOutData(o);
                         System.Threading.Interlocked.Increment(ref QueueCount);
@@ -645,7 +635,7 @@ namespace WA_Send_API.Function
             {
                 try
                 {
-                    _getOrderODBCReader.PrepareOdbcStatementDBOUCH("Select count(exchangeorderid) Total_Order from tborder ");
+                    _getOrderODBCReader.PrepareOdbcStatementDBOUCH("Select count(*) as Total_Order from tborder ");
                     OdbcDataReader r = _getOrderODBCReader.ExecuteReaderODBCOUCH();
 
                     if (r.HasRows)
@@ -802,30 +792,17 @@ namespace WA_Send_API.Function
             _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
 
             var string1 = "";
-            var string2 = "";
-
-            //double statusCheckPre = double.Parse(_OrderStatusPreop_Open);
-            //MessageBox.Show(statusCheckPre.ToString());
-            string Status = string.Empty;
-            if (statusCheckPre > 0)
-            {
-                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Preopening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject + " rows";
-            }
-            else if (statusCheckPre <= 0)
-            {
-                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Preopening Status Order are ERROR with Total : " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject + " rows";
-            }
 
             if (statusCheckPreOUCH > 0)
             {
-                string2 =  System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "-------------------------------------------------------------" +  System.Environment.NewLine + "Preopening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open_OUCH + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject_OUCH + " rows";
+                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine  + "Preopening Status Order are CLEARED with Total: " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open_OUCH + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject_OUCH + " rows";
             }
             else if (statusCheckPre <= 0)
             {
-                string2 =  System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "-------------------------------------------------------------" +  System.Environment.NewLine + "Preopening Status Order are ERROR with Total : " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open_OUCH + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject_OUCH + " rows";
+                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine  + "Preopening Status Order are ERROR with Total: " + System.Environment.NewLine + "Open Order " + _OrderStatusPreop_Open_OUCH + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderStatusPreop_Reject_OUCH + " rows";
             }
 
-            _querySetPreop = string1 + string2;
+            _querySetPreop = string1;
 
             //AddLog(LogType.INFO, _querySet.ToString());
             //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetPreop);
@@ -842,28 +819,17 @@ namespace WA_Send_API.Function
             _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
 
             var string1 = "";
-            var string2 = "";
-
-            if (statusCheck < 5)
-            {
-                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Opening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
-            }
-            else if (statusCheck > 10)
-            {
-                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Opening Status Order are ERROR with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
-            }
 
             if (statusCheckOUCH < 5)
             {
-                string2 = System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Opening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
+                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "Opening Status Order are CLEARED with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
             }
             else if (statusCheckOUCH > 10)
             {
-                string2 = System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "-------------------------------------------------------------" + System.Environment.NewLine + "Opening Status Order are ERROR with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
+                string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "Opening Status Order are ERROR with Total : " + System.Environment.NewLine + "Basket Order " + _OrderstatusOpening_Open + " rows." + System.Environment.NewLine + "Rejected Order " + _OrderstatusOpening_Reject + " rows";
             }
 
-            _querySetOpen = string1 + string2;
-            //MessageBox.Show(Statusa);
+            _querySetOpen = string1;
 
             //AddLog(LogType.INFO, _querySet.ToString());
             //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetOpen);
@@ -884,7 +850,7 @@ namespace WA_Send_API.Function
             //AddLog(LogType.INFO, _querySet.ToString());
 
             //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetShort);
-            await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetShort);
+            //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetShort);
         }
 
         public async void GetApiShortOUCH()
@@ -892,7 +858,7 @@ namespace WA_Send_API.Function
             _currentDateTime = DateTime.Now;
             _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
 
-            _querySetShort = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "Short ClientID = " + _ClientIDShortOUCH + System.Environment.NewLine + "StockID = " + _StockIDShortOUCH + System.Environment.NewLine + "Total Short = " + _TotalShortOUCH;
+            _querySetShort = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "Short ClientID = " + _ClientIDShortOUCH + System.Environment.NewLine + "StockID = " + _StockIDShortOUCH + System.Environment.NewLine + "Total Short = " + _TotalShortOUCH;
 
             //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetShort);
             await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetShort);
@@ -904,14 +870,12 @@ namespace WA_Send_API.Function
             _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
 
             var string1 = "";
-            var string2 = "";
 
-            string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*FIX5*" + System.Environment.NewLine + "Total Order = " + _TotalOrder;
-            string2 = System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "Total Order = " + _TotalOrderOUCH;
+            string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "Total Order = " + _TotalOrderOUCH;
 
             //AddLog(LogType.INFO, _querySet.ToString());
 
-            _querySetOrder = string1 + string2;
+            _querySetOrder = string1;
             //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetOrder);
             await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetOrder);
 
@@ -923,13 +887,10 @@ namespace WA_Send_API.Function
             _currentDateTime = DateTime.Now;
             _formattedDateTime = _currentDateTime.ToString("dddd, dd MMMM yyyy HH:mm:ss");
 
+            var string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*S21*" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| *Type*   |  *DBBO*    |     *DBFO*     | " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CC      |  " + _dbBOCountCCS21 + "    |  " + _dbFOCountCC + "      |" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CS      |  " + _dbBOCountCSS21 + "    |  " + _dbFOCountCS + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| Client |  " + _dbBOCountClientS21 + "    |  " + _dbFOCountClient + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| User   |  " + _dbBOCountUserS21 + "    |  " + _dbFOCountUser + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------";
+            var string2 = System.Environment.NewLine    + System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| *Type*   |  *DBBridge*    |  *DBFO* | " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CC      |  " + _dbBridgeCountCC2 + "    |  " + _dbBridgeCountCCOUCH + "      |" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CS      |  " + _dbBridgeCountCS + "    |  " + _dbBridgeCountCSOUCH + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| Client |  " + _dbBridgeCountClient + "    |  " + _dbBridgeCountClientOUCH + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| User   |  " + _dbBridgeCountUser2 + "    |  " + _dbBridgeCountUserOUCH + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------";
 
-            var string1 = _formattedDateTime.ToString() + System.Environment.NewLine + System.Environment.NewLine + "*TRUS*" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| *Type*   |  *DBBO*    |  *DBBridge* | " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CC      |  " + _dbBOCountCCTrus + "    |  " + _dbBridgeCountCC + "      |" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CS      |  " + _dbBOCountCSTrus + "    |  " + _dbBridgeCountCS + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| Client |  " + _dbBOCountClientTrus + "    |  " + _dbBridgeCountClient + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| User   |  " + _dbBOCountUserTrus + "    |  " + _dbBridgeCountUser + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------";
-            var string2 = System.Environment.NewLine + System.Environment.NewLine + System.Environment.NewLine + "*S21*" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| *Type*   |  *DBBO*    |     *DBFO*     | " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CC      |  " + _dbBOCountCCS21 + "    |  " + _dbFOCountCC + "      |" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CS      |  " + _dbBOCountCSS21 + "    |  " + _dbFOCountCS + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| Client |  " + _dbBOCountClientS21 + "    |  " + _dbFOCountClient + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| User   |  " + _dbBOCountUserS21 + "    |  " + _dbFOCountUser + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------";
-            var string3 = System.Environment.NewLine + System.Environment.NewLine + System.Environment.NewLine + "*OUCH*" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| *Type*   |  *DBBridge*    |  *DBFO* | " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CC      |  " + _dbBridgeCountCC2 + "    |  " + _dbBridgeCountCCOUCH + "      |" + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| CS      |  " + _dbBridgeCountCS + "    |  " + _dbBridgeCountCSOUCH + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| Client |  " + _dbBridgeCountClient + "    |  " + _dbBridgeCountClientOUCH + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------------------" + System.Environment.NewLine + "| User   |  " + _dbBridgeCountUser2 + "    |  " + _dbBridgeCountUserOUCH + "      |  " + System.Environment.NewLine + "---------------------------------------------------------------";
-            
-            _querySetDBCompare = string1 + string2 + string3;
-            //AddLog(LogType.INFO, _querySet.ToString());
+            _querySetDBCompare = string1;
 
             //await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "6287845016747", _querySetDBCompare);
             await RestHelper.Post("hsfvXBi91oPj2QHMuY8I", "6281110000665", "120363195609109582", _querySetDBCompare);

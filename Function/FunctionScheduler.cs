@@ -39,16 +39,16 @@ namespace WA_Send_API.Function
             _timeSpanPreop = TimeSpan.Parse("08:45:02");
             _timeSpanOpen = TimeSpan.Parse("09:00:02");
             _timeSpanShort = TimeSpan.Parse("16:10:00");
-            _timeSpanOrder = TimeSpan.Parse("04:16:00");
-            _timeSpanDBcompare = TimeSpan.Parse("04:12:00");
+            _timeSpanOrder = TimeSpan.Parse("04:10:00");
+            //_timeSpanDBcompare = TimeSpan.Parse("04:12:00");
             this._timer_Elapsed(null, null);
 
             //this._timer.Start(); //for test only
-            //_timeSpanPreop = TimeSpan.Parse("15:12:00");
-            //_timeSpanOpen = TimeSpan.Parse("15:12:10");
-            //_timeSpanShort = TimeSpan.Parse("15:12:20");
-            //_timeSpanOrder = TimeSpan.Parse("15:12:30");
-            //_timeSpanDBcompare = TimeSpan.Parse("15:12:40");
+            //_timeSpanPreop = TimeSpan.Parse("14:35:00");
+            //_timeSpanOpen =  TimeSpan.Parse("14:35:10");
+            //_timeSpanShort = TimeSpan.Parse("14:35:20");
+            //_timeSpanOrder = TimeSpan.Parse("14:35:30");
+            ////_timeSpanDBcompare = TimeSpan.Parse("11:12:40");
             //this._timer_Elapsed(null, null);
 
 
